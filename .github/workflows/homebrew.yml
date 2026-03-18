@@ -30,22 +30,12 @@ jobs:
           sed -i "s|url \".*\"|url \"${URL}\"|" Formula/shpool.rb
           sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|" Formula/shpool.rb
 
-      - name: Open PR
+      - name: Commit and push
         run: |
           VERSION="${{ github.event.inputs.version || github.event.client_payload.version }}"
-          BRANCH="update-formula-${VERSION}"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
           git add Formula/shpool.rb
           git commit -m "Update formula to ${VERSION}"
-          git push origin "$BRANCH"
-
-          gh pr create \
-            --title "Update formula to ${VERSION}" \
-            --body "Automated update of \`Formula/shpool.rb\` for release ${VERSION}." \
-            --base master \
-            --head "$BRANCH"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git push origin HEAD
