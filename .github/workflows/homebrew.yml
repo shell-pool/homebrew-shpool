@@ -1,0 +1,51 @@
+name: Update Homebrew formula
+
+# Triggered manually or via repository_dispatch from shell-pool/shpool.
+# To trigger automatically on release, add a workflow step to shell-pool/shpool
+# that calls the GitHub API to dispatch this workflow with the new version tag.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version tag (e.g. v0.9.5)'
+        required: true
+  repository_dispatch:
+    types: [new-release]
+
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update formula version and SHA256
+        run: |
+          VERSION="${{ github.event.inputs.version || github.event.client_payload.version }}"
+          URL="https://github.com/shell-pool/shpool/archive/refs/tags/${VERSION}.tar.gz"
+          SHA256=$(curl -sL "$URL" | shasum -a 256 | awk '{print $1}')
+
+          sed -i "s|url \".*\"|url \"${URL}\"|" Formula/shpool.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|" Formula/shpool.rb
+
+      - name: Open PR
+        run: |
+          VERSION="${{ github.event.inputs.version || github.event.client_payload.version }}"
+          BRANCH="update-formula-${VERSION}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add Formula/shpool.rb
+          git commit -m "Update formula to ${VERSION}"
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --title "Update formula to ${VERSION}" \
+            --body "Automated update of \`Formula/shpool.rb\` for release ${VERSION}." \
+            --base master \
+            --head "$BRANCH"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
