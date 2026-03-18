@@ -1,29 +1,48 @@
 name: Update Homebrew formula
 
-# Triggered manually or via repository_dispatch from shell-pool/shpool.
-# To trigger automatically on release, add a workflow step to shell-pool/shpool
-# that calls the GitHub API to dispatch this workflow with the new version tag.
 on:
+  schedule:
+    - cron: '0 6 * * *'  # daily at 6am UTC
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version tag (e.g. v0.9.5)'
-        required: true
-  repository_dispatch:
-    types: [new-release]
+        description: 'Release version tag (e.g. v0.9.5) — leave blank to fetch latest'
+        required: false
 
 jobs:
   update-formula:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Update formula version and SHA256
+      - name: Resolve version
+        id: version
         run: |
-          VERSION="${{ github.event.inputs.version || github.event.client_payload.version }}"
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=$(curl -s https://api.github.com/repos/shell-pool/shpool/releases/latest | jq -r '.tag_name')
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Check if update is needed
+        id: check
+        run: |
+          CURRENT=$(grep -oP 'refs/tags/\K[^"]+' Formula/shpool.rb | head -1)
+          echo "current=${CURRENT}"
+          echo "latest=${{ steps.version.outputs.version }}"
+          if [ "$CURRENT" = "${{ steps.version.outputs.version }}" ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update formula version and SHA256
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
           URL="https://github.com/shell-pool/shpool/archive/refs/tags/${VERSION}.tar.gz"
           SHA256=$(curl -sL "$URL" | shasum -a 256 | awk '{print $1}')
 
@@ -31,8 +50,9 @@ jobs:
           sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|" Formula/shpool.rb
 
       - name: Commit and push
+        if: steps.check.outputs.needed == 'true'
         run: |
-          VERSION="${{ github.event.inputs.version || github.event.client_payload.version }}"
+          VERSION="${{ steps.version.outputs.version }}"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
