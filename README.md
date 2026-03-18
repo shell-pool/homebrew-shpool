@@ -2,8 +2,8 @@
 
 Homebrew tap for [shpool](https://github.com/shell-pool/shpool), a lightweight persistent shell session manager for macOS.
 
-> [!WARNING]
-> Linux is the primary supported platform. macOS support is functional but some features are still being worked on. See the [platform support notes](https://github.com/shell-pool/shpool/blob/master/HACKING.md) in the main repository for the current state.
+> [!NOTE]
+> macOS support is functional but some features are still being worked on. See the [platform support notes](https://github.com/shell-pool/shpool/blob/master/HACKING.md) in the main repository for the current state.
 
 ## Installation
 
