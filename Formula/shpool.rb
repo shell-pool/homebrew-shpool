@@ -1,8 +1,8 @@
 class Shpool < Formula
   desc "Lightweight persistent shell session manager"
   homepage "https://github.com/shell-pool/shpool"
-  url "https://github.com/shell-pool/shpool/archive/refs/tags/v0.9.7.tar.gz"
-  sha256 "ad6fc389042ea851560a1af788a915a50da0deff8d96cf6cf44132a612b7bb64"
+  url "https://github.com/shell-pool/shpool/archive/refs/tags/v0.9.8.tar.gz"
+  sha256 "8a1efac2e49a341b27557cc9cddb57086e09f4ee639aaad348fa0f841de1fd1e"
   license "Apache-2.0"
   head "https://github.com/shell-pool/shpool.git", branch: "master"
 
